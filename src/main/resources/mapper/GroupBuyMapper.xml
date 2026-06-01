@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.tencent.wxcloudrun.dao.GroupBuyMapper">
+
+    <resultMap id="groupBuyMapper" type="com.tencent.wxcloudrun.model.GroupBuy">
+        <id property="id" column="id"/>
+        <result property="rawText" column="raw_text"/>
+        <result property="platform" column="platform"/>
+        <result property="productName" column="product_name"/>
+        <result property="groupPrice" column="group_price"/>
+        <result property="remainingSlots" column="remaining_slots"/>
+        <result property="shareCode" column="share_code"/>
+        <result property="shareUrl" column="share_url"/>
+        <result property="initiatorId" column="initiator_id"/>
+        <result property="expireTime" column="expire_time" javaType="java.time.LocalDateTime"/>
+        <result property="createdAt" column="created_at" javaType="java.time.LocalDateTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.tencent.wxcloudrun.model.GroupBuy" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO group_buy (`raw_text`, `platform`, `product_name`, `group_price`,
+                               `remaining_slots`, `share_code`, `share_url`,
+                               `initiator_id`, `expire_time`, `created_at`)
+        VALUES (#{rawText}, #{platform}, #{productName}, #{groupPrice},
+                #{remainingSlots}, #{shareCode}, #{shareUrl},
+                #{initiatorId}, #{expireTime}, #{createdAt})
+    </insert>
+
+    <select id="selectById" resultMap="groupBuyMapper">
+        SELECT * FROM group_buy WHERE id = #{id}
+    </select>
+
+    <select id="selectByInitiator" resultMap="groupBuyMapper">
+        SELECT * FROM group_buy
+        WHERE initiator_id = #{initiatorId}
+        <if test="status != null and status == 1">
+            AND expire_time &gt; NOW()
+        </if>
+        <if test="status != null and status == 2">
+            AND expire_time &lt;= NOW()
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND share_url LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectActive" resultMap="groupBuyMapper">
+        SELECT * FROM group_buy
+        WHERE expire_time &gt; NOW()
+        <if test="keywords != null and keywords.size() > 0">
+            AND (
+            <foreach collection="keywords" item="kw" separator=" OR ">
+                share_url LIKE CONCAT('%', #{kw}, '%')
+            </foreach>
+            )
+        </if>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countActive" resultType="int">
+        SELECT COUNT(*) FROM group_buy
+        WHERE expire_time &gt; NOW()
+        <if test="keywords != null and keywords.size() > 0">
+            AND (
+            <foreach collection="keywords" item="kw" separator=" OR ">
+                share_url LIKE CONCAT('%', #{kw}, '%')
+            </foreach>
+            )
+        </if>
+    </select>
+
+    <select id="selectActiveByShareCodeOrUrl" resultMap="groupBuyMapper">
+        SELECT * FROM group_buy
+        WHERE expire_time &gt; NOW()
+        AND (
+            <if test="shareCode != null and shareCode != ''">
+                share_code = #{shareCode}
+            </if>
+            <if test="shareCode != null and shareCode != '' and shareUrl != null and shareUrl != ''">
+                OR
+            </if>
+            <if test="shareUrl != null and shareUrl != ''">
+                share_url = #{shareUrl}
+            </if>
+        )
+        LIMIT 1
+    </select>
+
+</mapper>

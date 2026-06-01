@@ -1,0 +1,13 @@
+# ================================
+# 本地开发配置 (Local Profile)
+# ================================
+# 使用方法: 启动时添加参数 --spring.profiles.active=local
+# 此文件不会被发布到微信云托管（云托管使用环境变量配置）
+# ================================
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/springboot_demo?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root123

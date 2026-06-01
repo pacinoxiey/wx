@@ -38,13 +38,13 @@ public class CounterController {
    */
   @GetMapping(value = "/api/count")
   ApiResponse get() {
-    logger.info("/api/count get request");
+    logger.info("GET /api/count 请求");
     Optional<Counter> counter = counterService.getCounter(1);
     Integer count = 0;
     if (counter.isPresent()) {
       count = counter.get().getCount();
     }
-
+    logger.info("GET /api/count 响应: count={}", count);
     return ApiResponse.ok(count);
   }
 
@@ -56,7 +56,7 @@ public class CounterController {
    */
   @PostMapping(value = "/api/count")
   ApiResponse create(@RequestBody CounterRequest request) {
-    logger.info("/api/count post request, action: {}", request.getAction());
+    logger.info("POST /api/count 请求: action={}", request.getAction());
 
     Optional<Counter> curCounter = counterService.getCounter(1);
     if (request.getAction().equals("inc")) {
@@ -68,14 +68,18 @@ public class CounterController {
       counter.setId(1);
       counter.setCount(count);
       counterService.upsertCount(counter);
+      logger.info("POST /api/count 响应: inc → count={}", count);
       return ApiResponse.ok(count);
     } else if (request.getAction().equals("clear")) {
       if (!curCounter.isPresent()) {
+        logger.info("POST /api/count 响应: clear → count=0 (不存在)");
         return ApiResponse.ok(0);
       }
       counterService.clearCount(1);
+      logger.info("POST /api/count 响应: clear → count=0");
       return ApiResponse.ok(0);
     } else {
+      logger.warn("POST /api/count 参数异常: action={}", request.getAction());
       return ApiResponse.error("参数action错误");
     }
   }
