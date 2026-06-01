@@ -58,7 +58,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         gb.setGroupPrice(parsed.getGroupPrice());
         gb.setRemainingSlots(parsed.getRemainingSlots());
         gb.setShareCode(parsed.getShareCode());
-        gb.setShareUrl(parsed.getShareUrl());
+        gb.setShareUrl(rawText);
         gb.setInitiatorId(openid);
 
         LocalDateTime now = LocalDateTime.now();
