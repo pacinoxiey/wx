@@ -7,6 +7,7 @@
         <result property="rawText" column="raw_text"/>
         <result property="platform" column="platform"/>
         <result property="productName" column="product_name"/>
+        <result property="productDesc" column="product_desc"/>
         <result property="groupPrice" column="group_price"/>
         <result property="remainingSlots" column="remaining_slots"/>
         <result property="shareCode" column="share_code"/>
@@ -17,10 +18,10 @@
     </resultMap>
 
     <insert id="insert" parameterType="com.tencent.wxcloudrun.model.GroupBuy" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO group_buy (`raw_text`, `platform`, `product_name`, `group_price`,
+        INSERT INTO group_buy (`raw_text`, `platform`, `product_name`, `product_desc`, `group_price`,
                                `remaining_slots`, `share_code`, `share_url`,
                                `initiator_id`, `expire_time`, `created_at`)
-        VALUES (#{rawText}, #{platform}, #{productName}, #{groupPrice},
+        VALUES (#{rawText}, #{platform}, #{productName}, #{productDesc}, #{groupPrice},
                 #{remainingSlots}, #{shareCode}, #{shareUrl},
                 #{initiatorId}, #{expireTime}, #{createdAt})
     </insert>
