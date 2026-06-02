@@ -20,6 +20,9 @@ public class GroupBuy implements Serializable {
     /** 商品名称 (从文本解析) */
     private String productName;
 
+    /** 商品描述 (【...】及后面的描述文字) */
+    private String productDesc;
+
     /** 拼团价格 */
     private BigDecimal groupPrice;
 

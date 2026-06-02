@@ -16,6 +16,7 @@ CREATE TABLE `group_buy` (
   `raw_text`        TEXT         NOT NULL                 COMMENT '用户粘贴的原始文本',
   `platform`        VARCHAR(32)  NOT NULL DEFAULT '拼多多' COMMENT '来源平台',
   `product_name`    VARCHAR(512) NOT NULL                 COMMENT '商品名称',
+  `product_desc`    VARCHAR(1024)                          COMMENT '商品描述(【...】及后面的描述文字)',
   `group_price`     DECIMAL(10,2)                         COMMENT '拼团价格',
   `remaining_slots` INT          NOT NULL DEFAULT 1       COMMENT '剩余名额',
   `share_code`      VARCHAR(128)                          COMMENT '口令码',

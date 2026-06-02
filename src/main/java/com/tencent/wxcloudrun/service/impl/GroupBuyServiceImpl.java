@@ -55,6 +55,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         gb.setRawText(rawText);
         gb.setPlatform(parsed.getPlatform());
         gb.setProductName(parsed.getProductName());
+        gb.setProductDesc(parsed.getProductDesc());
         gb.setGroupPrice(parsed.getGroupPrice());
         gb.setRemainingSlots(parsed.getRemainingSlots());
         gb.setShareCode(parsed.getShareCode());
@@ -165,6 +166,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         resp.setId(gb.getId());
         resp.setPlatform(gb.getPlatform());
         resp.setProductName(gb.getProductName());
+        resp.setProductDesc(gb.getProductDesc());
         resp.setGroupPrice(gb.getGroupPrice());
         resp.setRemainingSlots(gb.getRemainingSlots());
         resp.setShareCode(gb.getShareCode());
