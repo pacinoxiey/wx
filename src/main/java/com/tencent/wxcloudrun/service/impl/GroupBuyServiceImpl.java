@@ -39,6 +39,17 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         // 解析文本
         TextParserService.ParseResult parsed = textParserService.parse(rawText);
 
+        // 链接校验: share_url 或 share_code 必须至少有一个有效
+        String shareUrl = parsed.getShareUrl();
+        String shareCode = parsed.getShareCode();
+        if ((shareUrl == null || shareUrl.isEmpty()) && (shareCode == null || shareCode.isEmpty())) {
+            throw new IllegalArgumentException("未识别到有效的拼团链接或口令码，请检查文本格式");
+        }
+        // URL 域名白名单校验
+        if (shareUrl != null && !shareUrl.isEmpty() && !isValidPlatformUrl(shareUrl)) {
+            throw new IllegalArgumentException("暂不支持该平台的拼团链接，仅支持拼多多/京东/淘宝/美团/抖音");
+        }
+
         // 去重: 根据 share_code/share_url 查找是否已有进行中的相同拼团
         GroupBuy existing = groupBuyMapper.selectActiveByShareCodeOrUrl(
                 parsed.getShareCode(), parsed.getShareUrl());
@@ -58,8 +69,8 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         gb.setProductDesc(parsed.getProductDesc());
         gb.setGroupPrice(parsed.getGroupPrice());
         gb.setRemainingSlots(parsed.getRemainingSlots());
-        gb.setShareCode(parsed.getShareCode());
-        gb.setShareUrl(rawText);
+        gb.setShareCode(shareCode);
+        gb.setShareUrl(shareUrl);
         gb.setInitiatorId(openid);
 
         LocalDateTime now = LocalDateTime.now();
@@ -203,5 +214,22 @@ public class GroupBuyServiceImpl implements GroupBuyService {
             return null;
         }
         return dt.atZone(ZoneId.of("Asia/Shanghai")).toEpochSecond();
+    }
+
+    /**
+     * 校验 share_url 是否属于支持的平台域名
+     */
+    private boolean isValidPlatformUrl(String url) {
+        if (url == null || url.isEmpty()) return false;
+        String lower = url.toLowerCase();
+        return lower.contains("yangkeduo.com")
+            || lower.contains("pinduoduo.com")
+            || lower.contains("jd.com")
+            || lower.contains("taobao.com")
+            || lower.contains("tmall.com")
+            || lower.contains("tb.cn")
+            || lower.contains("meituan.com")
+            || lower.contains("douyin.com")
+            || lower.contains("jinritemai.com");
     }
 }
