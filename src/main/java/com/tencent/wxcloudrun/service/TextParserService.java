@@ -153,16 +153,19 @@ public class TextParserService {
     }
 
     /**
-     * 提取商品描述 —— 【...】及其后面的描述文字直到逗号/名额标记
+     * 提取商品描述 —— 从【...】开始直到逗号/名额标记
      * 示例: "购买【喵梵思】王贵皮黄皮木薯猫砂瞬吸结团防臭...，仅剩2个名额"
      * 返回: "【喵梵思】王贵皮黄皮木薯猫砂瞬吸结团防臭"
      */
     private String extractProductDesc(String text) {
-        // 从 "购买" 或 "拼团" 后面提取，到 "，" 或 "，" 或 "仅剩" 或结尾
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?:购买|拼团)\\s*(.+?)(?:[，,]|仅剩|还差|$)").matcher(text);
-        if (m.find()) {
-            String desc = m.group(1).trim();
-            // 去掉末尾的 "..." 或 ".."
+        int start = text.indexOf("【");
+        if (start >= 0) {
+            int end = text.length();
+            for (String marker : new String[]{"，", "，", "仅剩", "还差"}) {
+                int pos = text.indexOf(marker, start);
+                if (pos > 0 && pos < end) end = pos;
+            }
+            String desc = text.substring(start, end).trim();
             desc = desc.replaceAll("[.…]+$", "").trim();
             if (desc.length() > 2) return desc;
         }
