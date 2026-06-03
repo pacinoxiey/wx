@@ -132,7 +132,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
     public List<GroupBuyResp> searchActive(GroupBuySearchReq req) {
         int offset = (req.getPage() - 1) * req.getPageSize();
         List<String> keywords = mergeKeywords(req);
-        List<GroupBuy> list = groupBuyMapper.selectActive(keywords, offset, req.getPageSize());
+        List<GroupBuy> list = groupBuyMapper.selectActive(keywords, req.getHideExpired(), offset, req.getPageSize());
         List<GroupBuyResp> result = new ArrayList<>();
         for (GroupBuy gb : list) {
             result.add(toResp(gb));
@@ -143,7 +143,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
     @Override
     public int countActive(GroupBuySearchReq req) {
         List<String> keywords = mergeKeywords(req);
-        return groupBuyMapper.countActive(keywords);
+        return groupBuyMapper.countActive(keywords, req.getHideExpired());
     }
 
     @Override

@@ -48,7 +48,10 @@
 
     <select id="selectActive" resultMap="groupBuyMapper">
         SELECT * FROM group_buy
-        WHERE expire_time &gt; NOW()
+        WHERE 1=1
+        <if test="hideExpired == null or hideExpired">
+            AND expire_time &gt; NOW()
+        </if>
         <if test="keywords != null and keywords.size() > 0">
             AND (
             <foreach collection="keywords" item="kw" separator=" OR ">
@@ -62,7 +65,10 @@
 
     <select id="countActive" resultType="int">
         SELECT COUNT(*) FROM group_buy
-        WHERE expire_time &gt; NOW()
+        WHERE 1=1
+        <if test="hideExpired == null or hideExpired">
+            AND expire_time &gt; NOW()
+        </if>
         <if test="keywords != null and keywords.size() > 0">
             AND (
             <foreach collection="keywords" item="kw" separator=" OR ">

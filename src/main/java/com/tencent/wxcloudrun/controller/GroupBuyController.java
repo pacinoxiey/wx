@@ -136,10 +136,11 @@ public class GroupBuyController {
      * 好物提醒 - 自动匹配所有关注关键词，返回命中的进行中拼团
      */
     @GetMapping("/reminder")
-    public ApiResponse reminder(@RequestParam(defaultValue = "1") Integer page,
+    public ApiResponse reminder(@RequestParam(defaultValue = "true") Boolean hideExpired,
+                                 @RequestParam(defaultValue = "1") Integer page,
                                  @RequestParam(defaultValue = "20") Integer pageSize) {
         String openid = currentUser();
-        log.info("GET /api/group-buy/reminder 请求: page={}, pageSize={}", page, pageSize);
+        log.info("GET /api/group-buy/reminder 请求: hideExpired={}, page={}, pageSize={}", hideExpired, page, pageSize);
 
         // 获取用户所有关注关键词
         List<UserKeyword> keywords = keywordService.listKeywords(openid);
@@ -157,6 +158,7 @@ public class GroupBuyController {
         String tags = keywords.stream().map(UserKeyword::getKeyword).collect(Collectors.joining("&"));
         GroupBuySearchReq req = new GroupBuySearchReq();
         req.setTags(tags);
+        req.setHideExpired(hideExpired);
         req.setPage(page);
         req.setPageSize(pageSize);
         List<GroupBuyResp> list = groupBuyService.searchActive(req);
