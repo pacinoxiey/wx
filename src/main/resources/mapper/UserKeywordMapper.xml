@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.tencent.wxcloudrun.dao.UserKeywordMapper">
+
+    <resultMap id="userKeywordMapper" type="com.tencent.wxcloudrun.model.UserKeyword">
+        <id property="id" column="id"/>
+        <result property="openid" column="openid"/>
+        <result property="keyword" column="keyword"/>
+        <result property="createdAt" column="created_at" javaType="java.time.LocalDateTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.tencent.wxcloudrun.model.UserKeyword" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_keyword (`openid`, `keyword`, `created_at`)
+        VALUES (#{openid}, #{keyword}, NOW())
+    </insert>
+
+    <delete id="deleteById">
+        DELETE FROM user_keyword WHERE id = #{id} AND openid = #{openid}
+    </delete>
+
+    <select id="selectByOpenid" resultMap="userKeywordMapper">
+        SELECT * FROM user_keyword WHERE openid = #{openid} ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByOpenidAndKeyword" resultMap="userKeywordMapper">
+        SELECT * FROM user_keyword WHERE openid = #{openid} AND keyword = #{keyword} LIMIT 1
+    </select>
+
+</mapper>

@@ -28,3 +28,15 @@ CREATE TABLE `group_buy` (
   KEY `idx_initiator` (`initiator_id`),
   KEY `idx_expire_time` (`expire_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='拼团信息表';
+
+
+-- 用户关注关键词表
+CREATE TABLE `user_keyword` (
+  `id`         BIGINT       NOT NULL AUTO_INCREMENT  COMMENT 'ID',
+  `openid`     VARCHAR(64)  NOT NULL                 COMMENT '用户 openid',
+  `keyword`    VARCHAR(256) NOT NULL                 COMMENT '关注的关键词',
+  `created_at` DATETIME     NOT NULL DEFAULT NOW()   COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_openid` (`openid`),
+  UNIQUE KEY `idx_openid_keyword` (`openid`, `keyword`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户关注关键词表';
