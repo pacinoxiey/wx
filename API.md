@@ -53,6 +53,7 @@ GET /api/group-buy/search
 |------|------|--------|------|
 | keyword | 否 | - | 手写搜索词，整体模糊匹配 share_url |
 | tags | 否 | - | 多选预制标签，用 `&` 分隔，每个标签独立 OR 匹配 |
+| hideExpired | 否 | true | 是否隐藏已过期，false=显示全部 |
 | page | 否 | 1 | 页码 |
 | pageSize | 否 | 20 | 每页条数 |
 
@@ -85,7 +86,8 @@ GET /api/group-buy/search?keyword=猫砂&tags=鲜明%26蓝氏&page=1&pageSize=10
     {
       "id": 1,
       "platform": "拼多多",
-      "productName": "【喵梵思】猫砂除臭结团",
+      "productName": "【喵梵思】",
+      "productDesc": "【喵梵思】猫砂除臭结团",
       "groupPrice": 28.80,
       "remainingSlots": 2,
       "shareCode": "ABC001",
@@ -110,7 +112,8 @@ GET /api/group-buy/search?keyword=猫砂&tags=鲜明%26蓝氏&page=1&pageSize=10
 |------|------|------|
 | id | long | 拼团ID |
 | platform | string | 来源平台（拼多多/京东/淘宝等） |
-| productName | string | 商品名称 |
+| productName | string | 商品名称（【...】部分） |
+| productDesc | string | 商品描述（【...】及其后面的描述文字） |
 | groupPrice | decimal | 拼团价格 |
 | remainingSlots | int | 剩余名额 |
 | shareCode | string | 口令码 |
@@ -203,9 +206,84 @@ GET /api/group-buy/my-initiated?status=2&keyword=jd&page=1&pageSize=10
 
 ---
 
+## 6. 好物提醒
+
+```
+GET /api/group-buy/reminder
+```
+
+**说明：** 自动获取当前用户所有关注关键词，用 OR 逻辑匹配进行中的拼团。
+
+**参数：**
+
+| 参数 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| hideExpired | 否 | true | 是否隐藏已过期，false=显示全部 |
+| page | 否 | 1 | 页码 |
+| pageSize | 否 | 20 | 每页条数 |
+
+**示例：**
+
+```
+GET /api/group-buy/reminder
+GET /api/group-buy/reminder?hideExpired=false
+GET /api/group-buy/reminder?page=1&pageSize=10
+```
+
+**响应 data：** 同搜索结果格式。
+
+---
+
+## 7. 我的关注 - 关键词管理
+
+### 7.1 添加关键词
+
+```
+POST /api/keyword/add?keyword=xxx
+```
+
+| 参数 | 必填 | 说明 |
+|------|------|------|
+| keyword | 是 | 关键词，重复添加会报错 |
+
+**响应 data：**
+
+```json
+{ "id": 1, "keyword": "yangkeduo", "createdAt": 1751299200 }
+```
+
+### 7.2 删除关键词
+
+```
+DELETE /api/keyword/{id}
+```
+
+### 7.3 我的关注列表
+
+```
+GET /api/keyword/list
+```
+
+**响应 data：**
+
+```json
+[
+  { "id": 1, "keyword": "yangkeduo", "createdAt": 1751299200 },
+  { "id": 2, "keyword": "jd", "createdAt": 1751299200 }
+]
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | long | 关键词ID |
+| keyword | string | 关键词 |
+| createdAt | long | 创建时间，Unix 时间戳（秒） |
+
+---
+
 ## 错误码
 
 | code | 说明 |
 |------|------|
 | 0 | 成功 |
-| 非0 | 失败，详见 errorMsg |
+| -1 | 失败，详见 errorMsg |

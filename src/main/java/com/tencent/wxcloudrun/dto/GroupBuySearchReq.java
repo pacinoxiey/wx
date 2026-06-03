@@ -11,6 +11,9 @@ public class GroupBuySearchReq {
     /** 预制标签，多个用 & 分隔，每个单独模糊匹配 */
     private String tags;
 
+    /** 是否隐藏已过期，默认 true */
+    private Boolean hideExpired = true;
+
     /** 页码, 从1开始 */
     private Integer page = 1;
 

@@ -20,10 +20,12 @@ public interface GroupBuyMapper {
                                       @Param("limit") Integer limit);
 
     List<GroupBuy> selectActive(@Param("keywords") List<String> keywords,
+                                @Param("hideExpired") Boolean hideExpired,
                                 @Param("offset") Integer offset,
                                 @Param("limit") Integer limit);
 
-    int countActive(@Param("keywords") List<String> keywords);
+    int countActive(@Param("keywords") List<String> keywords,
+                    @Param("hideExpired") Boolean hideExpired);
 
     /**
      * 根据 share_code 或 share_url 查找进行中的拼团（去重用）
