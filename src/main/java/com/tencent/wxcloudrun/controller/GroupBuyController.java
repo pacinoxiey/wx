@@ -6,7 +6,9 @@ import com.tencent.wxcloudrun.dto.GroupBuyCreateReq;
 import com.tencent.wxcloudrun.dto.GroupBuyResp;
 import com.tencent.wxcloudrun.dto.GroupBuySearchReq;
 import com.tencent.wxcloudrun.dto.SearchHomeResp;
+import com.tencent.wxcloudrun.model.UserKeyword;
 import com.tencent.wxcloudrun.service.GroupBuyService;
+import com.tencent.wxcloudrun.service.KeywordService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -24,6 +27,9 @@ public class GroupBuyController {
 
     @Autowired
     private GroupBuyService groupBuyService;
+
+    @Autowired
+    private KeywordService keywordService;
 
     /**
      * 获取当前微信用户标识
@@ -118,6 +124,44 @@ public class GroupBuyController {
         List<GroupBuyResp> list = groupBuyService.searchActive(req);
         int total = groupBuyService.countActive(req);
         log.info("GET /api/group-buy/search 响应: 共{}条, total={}", list.size(), total);
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", total);
+        data.put("page", page);
+        data.put("pageSize", pageSize);
+        return ApiResponse.ok(data);
+    }
+
+    /**
+     * 好物提醒 - 自动匹配所有关注关键词，返回命中的进行中拼团
+     */
+    @GetMapping("/reminder")
+    public ApiResponse reminder(@RequestParam(defaultValue = "1") Integer page,
+                                 @RequestParam(defaultValue = "20") Integer pageSize) {
+        String openid = currentUser();
+        log.info("GET /api/group-buy/reminder 请求: page={}, pageSize={}", page, pageSize);
+
+        // 获取用户所有关注关键词
+        List<UserKeyword> keywords = keywordService.listKeywords(openid);
+        if (keywords.isEmpty()) {
+            log.info("GET /api/group-buy/reminder 响应: 无关注关键词，返回空");
+            Map<String, Object> data = new HashMap<>();
+            data.put("list", java.util.Collections.emptyList());
+            data.put("total", 0);
+            data.put("page", page);
+            data.put("pageSize", pageSize);
+            return ApiResponse.ok(data);
+        }
+
+        // 用所有关键词 OR 匹配
+        String tags = keywords.stream().map(UserKeyword::getKeyword).collect(Collectors.joining("&"));
+        GroupBuySearchReq req = new GroupBuySearchReq();
+        req.setTags(tags);
+        req.setPage(page);
+        req.setPageSize(pageSize);
+        List<GroupBuyResp> list = groupBuyService.searchActive(req);
+        int total = groupBuyService.countActive(req);
+        log.info("GET /api/group-buy/reminder 响应: 关键词{}个，命中{}条, total={}", keywords.size(), list.size(), total);
         Map<String, Object> data = new HashMap<>();
         data.put("list", list);
         data.put("total", total);

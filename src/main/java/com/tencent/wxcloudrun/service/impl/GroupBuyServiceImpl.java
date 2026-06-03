@@ -46,9 +46,9 @@ public class GroupBuyServiceImpl implements GroupBuyService {
             throw new IllegalArgumentException("未识别到有效的拼团链接或口令码，请检查文本格式");
         }
         // URL 域名白名单校验
-        if (shareUrl != null && !shareUrl.isEmpty() && !isValidPlatformUrl(shareUrl)) {
-            throw new IllegalArgumentException("暂不支持该平台的拼团链接，仅支持拼多多/京东/淘宝/美团/抖音");
-        }
+        // if (shareUrl != null && !shareUrl.isEmpty() && !isValidPlatformUrl(shareUrl)) {
+        //     throw new IllegalArgumentException("暂不支持该平台的拼团链接，仅支持拼多多/京东/淘宝/美团/抖音");
+        // }
 
         // 去重: 根据 share_code/share_url 查找是否已有进行中的相同拼团
         GroupBuy existing = groupBuyMapper.selectActiveByShareCodeOrUrl(
@@ -70,7 +70,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         gb.setGroupPrice(parsed.getGroupPrice());
         gb.setRemainingSlots(parsed.getRemainingSlots());
         gb.setShareCode(shareCode);
-        gb.setShareUrl(shareUrl);
+        gb.setShareUrl(rawText);
         gb.setInitiatorId(openid);
 
         LocalDateTime now = LocalDateTime.now();
