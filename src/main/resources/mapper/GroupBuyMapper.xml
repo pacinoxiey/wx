@@ -95,4 +95,12 @@
         LIMIT 1
     </select>
 
+    <select id="selectActiveByProductDesc" resultMap="groupBuyMapper">
+        SELECT * FROM group_buy
+        WHERE expire_time &gt; NOW()
+        AND
+            product_desc = #{productDesc}
+        LIMIT 1
+    </select>
+
 </mapper>

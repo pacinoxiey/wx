@@ -32,4 +32,7 @@ public interface GroupBuyMapper {
      */
     GroupBuy selectActiveByShareCodeOrUrl(@Param("shareCode") String shareCode,
                                           @Param("shareUrl") String shareUrl);
+
+
+    GroupBuy selectActiveByProductDesc(@Param("productDesc") String productDesc);
 }
