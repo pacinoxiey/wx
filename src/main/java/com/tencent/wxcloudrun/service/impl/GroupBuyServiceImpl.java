@@ -38,7 +38,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
 
         // 解析文本
         TextParserService.ParseResult parsed = textParserService.parse(rawText);
-
+//        parsed.getProductDesc()
         // 链接校验: share_url 或 share_code 必须至少有一个有效
         String shareUrl = parsed.getShareUrl();
         String shareCode = parsed.getShareCode();
@@ -53,13 +53,24 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         // 去重: 根据 share_code/share_url 查找是否已有进行中的相同拼团
         GroupBuy existing = groupBuyMapper.selectActiveByShareCodeOrUrl(
                 parsed.getShareCode(), parsed.getShareUrl());
-        if (existing != null && !Boolean.TRUE.equals(force)) {
+        if (existing != null) {
             log.info("已存在相同的拼团, id={}, shareCode={}, shareUrl={}, 返回已有记录",
                     existing.getId(), parsed.getShareCode(), parsed.getShareUrl());
-            GroupBuyResp resp = toResp(existing);
+            throw new IllegalArgumentException("已存在相同的拼团");
+//            GroupBuyResp resp = toResp(existing);
+//            resp.setIsNew(false);
+//            return resp;
+        }
+
+        // 查询相同商品
+        GroupBuy groupBuy = groupBuyMapper.selectActiveByProductDesc(parsed.getProductDesc());
+        if (groupBuy != null && !Boolean.TRUE.equals(force)) {
+            log.info("已存在相同的商品, all={}, 返回已有记录", rawText);
+            GroupBuyResp resp = toResp(groupBuy);
             resp.setIsNew(false);
             return resp;
         }
+
 
         // 构建实体
         GroupBuy gb = new GroupBuy();
