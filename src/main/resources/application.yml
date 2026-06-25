@@ -31,3 +31,8 @@ groupbuy:
       - 零食
       - 玩具
       - 日用品
+
+# ======== 微信 API 密钥 ========
+wx:
+  api:
+    key: dafudafu123455·
