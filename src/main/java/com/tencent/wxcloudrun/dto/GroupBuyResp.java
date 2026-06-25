@@ -27,6 +27,9 @@ public class GroupBuyResp {
     /** 分享口令码 */
     private String shareCode;
 
+    /** 商品图片路径 */
+    private String imageUrl;
+
     /** 原始链接 */
     private String shareUrl;
 

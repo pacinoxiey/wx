@@ -192,6 +192,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         resp.setGroupPrice(gb.getGroupPrice());
         resp.setRemainingSlots(gb.getRemainingSlots());
         resp.setShareCode(gb.getShareCode());
+        resp.setImageUrl(gb.getImageUrl());
         resp.setShareUrl(gb.getShareUrl());
         resp.setInitiatorId(gb.getInitiatorId());
         resp.setExpireTime(toEpochSecond(gb.getExpireTime()));

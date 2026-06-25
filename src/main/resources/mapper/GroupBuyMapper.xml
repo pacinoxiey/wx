@@ -11,6 +11,7 @@
         <result property="groupPrice" column="group_price"/>
         <result property="remainingSlots" column="remaining_slots"/>
         <result property="shareCode" column="share_code"/>
+        <result property="imageUrl" column="image_url"/>
         <result property="shareUrl" column="share_url"/>
         <result property="initiatorId" column="initiator_id"/>
         <result property="expireTime" column="expire_time" javaType="java.time.LocalDateTime"/>
@@ -19,10 +20,10 @@
 
     <insert id="insert" parameterType="com.tencent.wxcloudrun.model.GroupBuy" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO group_buy (`raw_text`, `platform`, `product_name`, `product_desc`, `group_price`,
-                               `remaining_slots`, `share_code`, `share_url`,
+                               `remaining_slots`, `share_code`, `image_url`, `share_url`,
                                `initiator_id`, `expire_time`, `created_at`)
         VALUES (#{rawText}, #{platform}, #{productName}, #{productDesc}, #{groupPrice},
-                #{remainingSlots}, #{shareCode}, #{shareUrl},
+                #{remainingSlots}, #{shareCode}, #{imageUrl}, #{shareUrl},
                 #{initiatorId}, #{expireTime}, #{createdAt})
     </insert>
 

@@ -20,6 +20,7 @@ CREATE TABLE `group_buy` (
   `group_price`     DECIMAL(10,2)                         COMMENT '拼团价格',
   `remaining_slots` INT          NOT NULL DEFAULT 1       COMMENT '剩余名额',
   `share_code`      VARCHAR(128)                          COMMENT '口令码',
+  `image_url`       VARCHAR(512)                          COMMENT '商品图片路径',
   `share_url`       VARCHAR(512)                          COMMENT '原始链接(如有)',
   `initiator_id`    VARCHAR(64)  NOT NULL                 COMMENT '发起人用户 openid',
   `expire_time`     DATETIME     NOT NULL                 COMMENT '过期时间(创建时间+24h)',
