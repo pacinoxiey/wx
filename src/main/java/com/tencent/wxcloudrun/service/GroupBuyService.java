@@ -1,6 +1,8 @@
 package com.tencent.wxcloudrun.service;
 
 import com.tencent.wxcloudrun.dto.GroupBuyResp;
+import com.tencent.wxcloudrun.dto.GroupBuyCreateConfirmReq;
+import com.tencent.wxcloudrun.dto.GroupBuyCreateResultResp;
 import com.tencent.wxcloudrun.dto.GroupBuySearchReq;
 import com.tencent.wxcloudrun.dto.SearchHomeResp;
 
@@ -19,6 +21,10 @@ public interface GroupBuyService {
     GroupBuyResp getDetail(Long id);
 
     com.tencent.wxcloudrun.model.WechatQrTask getQrTask(Long taskId);
+
+    GroupBuyCreateResultResp getCreateResult(Long taskId);
+
+    GroupBuyCreateResultResp confirmCreateResult(Long taskId, GroupBuyCreateConfirmReq.Action action, String openid);
 
     /**
      * 我发起的拼团列表

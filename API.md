@@ -193,19 +193,9 @@ Content-Type: application/json
 GET /api/group-buy/create-result/{id}
 ```
 
-仅用于轮询二维码链接创建任务是否失败，不返回商品详情。
+轮询二维码链接异步解析任务。前端在上传二维码后展示 `message` 对应的 toast，并按 `status/action` 决定是否继续轮询或弹窗。
 
-处理中或成功：
-
-```json
-{
-  "code": 0,
-  "errorMsg": "",
-  "data": { "id": 123, "failed": false }
-}
-```
-
-最终失败时，`link` 为提交失败的二维码链接：
+处理中：继续保持 toast 在前台展示。
 
 ```json
 {
@@ -213,15 +203,166 @@ GET /api/group-buy/create-result/{id}
   "errorMsg": "",
   "data": {
     "id": 123,
-    "failed": true,
-    "link": "https://mobile.yangkeduo.com/..."
+    "status": "PROCESSING",
+    "action": "KEEP_TOAST",
+    "message": "正在获取商品信息，请小主耐心等待",
+    "link": "https://mobile.yangkeduo.com/...",
+    "sameProduct": false,
+    "groupBuy": null,
+    "failed": false
+  }
+}
+```
+
+成功创建新拼团：停止轮询，toast 文案变为“小主，已成功发布咯”。
+
+```json
+{
+  "code": 0,
+  "errorMsg": "",
+  "data": {
+    "id": 123,
+    "status": "SUCCESS",
+    "action": "SUCCESS_TOAST",
+    "message": "小主，已成功发布咯",
+    "link": "https://mobile.yangkeduo.com/...",
+    "sameProduct": false,
+    "groupBuy": {
+      "id": 456,
+      "link": "https://mobile.yangkeduo.com/...",
+      "inputType": "QR_CODE",
+      "platform": "拼多多",
+      "productName": "【商品名】",
+      "groupPrice": 67.60,
+      "remainingSlots": 2,
+      "imageUrl": "https://...",
+      "shareUrl": "https://mobile.yangkeduo.com/...",
+      "status": 1,
+      "expireTime": 1784020800,
+      "countdown": "剩余23小时40分",
+      "isNew": null
+    },
+    "failed": false
+  }
+}
+```
+
+成功但识别到同款进行中拼团：停止轮询，展示同款确认弹窗。
+
+```json
+{
+  "code": 0,
+  "errorMsg": "",
+  "data": {
+    "id": 123,
+    "status": "SUCCESS",
+    "action": "SAME_PRODUCT_DIALOG",
+    "message": "检测到有相同的产品，是否直接参与拼团",
+    "link": "https://mobile.yangkeduo.com/...",
+    "sameProduct": true,
+    "groupBuy": {
+      "id": 456,
+      "link": "https://mobile.yangkeduo.com/..."
+    },
+    "failed": false
+  }
+}
+```
+
+最终失败：停止轮询，展示失败弹窗，`link` 为提交失败的二维码链接。
+
+```json
+{
+  "code": 0,
+  "errorMsg": "",
+  "data": {
+    "id": 123,
+    "status": "FAILED",
+    "action": "FAIL_DIALOG",
+    "message": "没有识别到有效的二维码，请重新传一次吧",
+    "link": "https://mobile.yangkeduo.com/...",
+    "sameProduct": false,
+    "groupBuy": null,
+    "failed": true
   }
 }
 ```
 
 ---
 
-## 5. 拼团详情
+## 5. 确认同款结果
+
+```
+POST /api/group-buy/create-result/{id}/confirm
+Content-Type: application/json
+```
+
+仅当轮询返回 `action: "SAME_PRODUCT_DIALOG"` 时调用。
+
+弹窗右按钮“直接参与”：
+
+```json
+{
+  "action": "JOIN_EXISTING"
+}
+```
+
+后端会用该任务解析出的商品信息到 `group_buy` 表验证当前进行中的同款拼团。响应中的 `groupBuy` 为已存在的同款拼团，`inputType` 和 `link` 按数据库真实记录返回：可能是 `TOKEN` 口令，也可能是 `QR_CODE` 二维码链接。前端点击参与时可直接按 `inputType/link` 完成。
+
+```json
+{
+  "code": 0,
+  "errorMsg": "",
+  "data": {
+    "id": 123,
+    "status": "SUCCESS",
+    "action": "JOIN_EXISTING",
+    "message": "已为你找到相同产品拼团",
+    "link": "https://mobile.yangkeduo.com/...",
+    "sameProduct": true,
+    "groupBuy": {
+      "id": 456,
+      "inputType": "TOKEN",
+      "link": "T:/⇥xxxx⇤ 复制并打开拼多多APP..."
+    },
+    "failed": false
+  }
+}
+```
+
+弹窗左按钮“直接发团”：
+
+```json
+{
+  "action": "CREATE_NEW"
+}
+```
+
+后端会使用该二维码任务已解析出的商品信息强制创建一条新的 `QR_CODE` 拼团，并把任务绑定到新拼团；重复点击不会重复创建。
+
+```json
+{
+  "code": 0,
+  "errorMsg": "",
+  "data": {
+    "id": 123,
+    "status": "SUCCESS",
+    "action": "SUCCESS_TOAST",
+    "message": "小主，已成功发布咯",
+    "link": "https://mobile.yangkeduo.com/...",
+    "sameProduct": false,
+    "groupBuy": {
+      "id": 789,
+      "link": "https://mobile.yangkeduo.com/..."
+    },
+    "failed": false
+  }
+}
+```
+
+---
+
+## 6. 拼团详情
 
 ```
 GET /api/group-buy/{id}
@@ -237,7 +378,7 @@ GET /api/group-buy/1
 
 ---
 
-## 6. 我发起的拼团
+## 7. 我发起的拼团
 
 ```
 GET /api/group-buy/my-initiated
@@ -269,7 +410,7 @@ GET /api/group-buy/my-initiated?status=2&keyword=jd&page=1&pageSize=10
 
 ---
 
-## 7. 好物提醒
+## 8. 好物提醒
 
 ```
 GET /api/group-buy/reminder
@@ -297,9 +438,9 @@ GET /api/group-buy/reminder?page=1&pageSize=10
 
 ---
 
-## 8. 我的关注 - 关键词管理
+## 9. 我的关注 - 关键词管理
 
-### 7.1 添加关键词
+### 9.1 添加关键词
 
 ```
 POST /api/keyword/add?keyword=xxx
@@ -315,13 +456,13 @@ POST /api/keyword/add?keyword=xxx
 { "id": 1, "keyword": "yangkeduo", "createdAt": 1751299200 }
 ```
 
-### 7.2 删除关键词
+### 9.2 删除关键词
 
 ```
 DELETE /api/keyword/{id}
 ```
 
-### 7.3 我的关注列表
+### 9.3 我的关注列表
 
 ```
 GET /api/keyword/list

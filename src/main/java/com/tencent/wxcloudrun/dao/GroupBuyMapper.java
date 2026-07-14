@@ -18,7 +18,14 @@ public interface GroupBuyMapper {
 
     WechatQrTask selectWechatQrTaskByUrl(@Param("qrUrl") String qrUrl);
 
+    int bindWechatQrTaskGroupBuy(@Param("taskId") Long taskId,
+                                 @Param("groupBuyId") Long groupBuyId);
+
     GroupBuy selectById(@Param("id") Long id);
+
+    GroupBuy selectByQrTaskId(@Param("taskId") Long taskId);
+
+    GroupBuy selectMatchedByQrTaskId(@Param("taskId") Long taskId);
 
     List<GroupBuy> selectByInitiator(@Param("initiatorId") String initiatorId,
                                       @Param("status") Integer status,

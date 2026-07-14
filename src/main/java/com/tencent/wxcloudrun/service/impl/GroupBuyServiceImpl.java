@@ -2,6 +2,8 @@ package com.tencent.wxcloudrun.service.impl;
 
 import com.tencent.wxcloudrun.config.SearchHomeConfig;
 import com.tencent.wxcloudrun.dao.GroupBuyMapper;
+import com.tencent.wxcloudrun.dto.GroupBuyCreateConfirmReq;
+import com.tencent.wxcloudrun.dto.GroupBuyCreateResultResp;
 import com.tencent.wxcloudrun.dto.GroupBuyResp;
 import com.tencent.wxcloudrun.dto.GroupBuySearchReq;
 import com.tencent.wxcloudrun.dto.SearchHomeResp;
@@ -145,6 +147,224 @@ public class GroupBuyServiceImpl implements GroupBuyService {
     @Override
     public WechatQrTask getQrTask(Long taskId) {
         return groupBuyMapper.selectWechatQrTaskById(taskId);
+    }
+
+    @Override
+    public GroupBuyCreateResultResp getCreateResult(Long taskId) {
+        WechatQrTask task = groupBuyMapper.selectWechatQrTaskById(taskId);
+        if (task == null) {
+            throw new IllegalArgumentException("create task does not exist");
+        }
+
+        GroupBuyCreateResultResp resp = new GroupBuyCreateResultResp();
+        resp.setId(task.getId());
+        resp.setLink(task.getQrUrl());
+        resp.setSameProduct(Boolean.TRUE.equals(task.getSameProduct()));
+
+        String qrStatus = task.getQrStatus();
+        if ("FAILED".equals(qrStatus)) {
+            resp.setStatus("FAILED");
+            resp.setAction("FAIL_DIALOG");
+            resp.setMessage(task.getQrError() != null && !task.getQrError().trim().isEmpty()
+                    ? task.getQrError()
+                    : "没有识别到有效的二维码，请重新传一次吧");
+            resp.setFailed(true);
+            return resp;
+        }
+
+        if ("SUCCESS".equals(qrStatus)) {
+            GroupBuy groupBuy = Boolean.TRUE.equals(task.getSameProduct())
+                    ? findActiveSameProductFromTask(task)
+                    : groupBuyMapper.selectByQrTaskId(taskId);
+            if (groupBuy == null && task.getGroupBuyId() != null) {
+                groupBuy = groupBuyMapper.selectById(task.getGroupBuyId());
+            }
+            if (groupBuy == null && task.getMatchedGroupBuyId() != null) {
+                groupBuy = groupBuyMapper.selectById(task.getMatchedGroupBuyId());
+            }
+
+            resp.setStatus("SUCCESS");
+            resp.setGroupBuy(groupBuy != null ? toResp(groupBuy) : null);
+            resp.setAction(Boolean.TRUE.equals(task.getSameProduct())
+                    ? "SAME_PRODUCT_DIALOG"
+                    : "SUCCESS_TOAST");
+            resp.setMessage(Boolean.TRUE.equals(task.getSameProduct())
+                    ? "检测到有相同的产品，是否直接参与拼团"
+                    : "小主，已成功发布咯");
+            resp.setFailed(false);
+            return resp;
+        }
+
+        resp.setStatus("PROCESSING");
+        resp.setAction("KEEP_TOAST");
+        resp.setMessage("正在获取商品信息，请小主耐心等待");
+        resp.setFailed(false);
+        return resp;
+    }
+
+    @Override
+    @Transactional
+    public GroupBuyCreateResultResp confirmCreateResult(Long taskId,
+                                                        GroupBuyCreateConfirmReq.Action action,
+                                                        String openid) {
+        if (action == null) {
+            throw new IllegalArgumentException("action is required");
+        }
+
+        WechatQrTask task = groupBuyMapper.selectWechatQrTaskById(taskId);
+        if (task == null) {
+            throw new IllegalArgumentException("create task does not exist");
+        }
+        if (!"SUCCESS".equals(task.getQrStatus())) {
+            throw new IllegalArgumentException("create task is not ready");
+        }
+        if (!Boolean.TRUE.equals(task.getSameProduct())) {
+            return getCreateResult(taskId);
+        }
+
+        if (action == GroupBuyCreateConfirmReq.Action.JOIN_EXISTING) {
+            GroupBuy matched = findActiveSameProductFromTask(task);
+            if (matched == null) {
+                throw new IllegalArgumentException("matched group buy does not exist");
+            }
+            return buildConfirmedResult(task, matched, "JOIN_EXISTING", "已为你找到相同产品拼团");
+        }
+
+        GroupBuy created = groupBuyMapper.selectByQrTaskId(taskId);
+        if (created == null) {
+            created = createQrGroupBuyFromTask(task, openid);
+            groupBuyMapper.bindWechatQrTaskGroupBuy(taskId, created.getId());
+        }
+        return buildConfirmedResult(task, created, "SUCCESS_TOAST", "小主，已成功发布咯");
+    }
+
+    private GroupBuyCreateResultResp buildConfirmedResult(WechatQrTask task,
+                                                          GroupBuy groupBuy,
+                                                          String action,
+                                                          String message) {
+        GroupBuyCreateResultResp resp = new GroupBuyCreateResultResp();
+        resp.setId(task.getId());
+        resp.setStatus("SUCCESS");
+        resp.setAction(action);
+        resp.setMessage(message);
+        resp.setLink(task.getQrUrl());
+        resp.setSameProduct(action.equals("JOIN_EXISTING"));
+        resp.setGroupBuy(toResp(groupBuy));
+        resp.setFailed(false);
+        return resp;
+    }
+
+    private GroupBuy findActiveSameProductFromTask(WechatQrTask task) {
+        String productDesc = extractTaskProductDesc(task);
+        if (productDesc != null && !productDesc.isEmpty()) {
+            GroupBuy sameProduct = groupBuyMapper.selectActiveByProductDesc(productDesc);
+            if (sameProduct != null) {
+                return sameProduct;
+            }
+        }
+
+        GroupBuy matched = groupBuyMapper.selectMatchedByQrTaskId(task.getId());
+        if (matched == null && task.getMatchedGroupBuyId() != null) {
+            matched = groupBuyMapper.selectById(task.getMatchedGroupBuyId());
+        }
+        return matched;
+    }
+
+    private String extractTaskProductDesc(WechatQrTask task) {
+        if (task.getQrRawText() != null && !task.getQrRawText().trim().isEmpty()) {
+            try {
+                return parseQrRawText(task.getQrRawText()).getProductDesc();
+            } catch (IllegalArgumentException e) {
+                log.warn("Failed to parse qr_raw_text for same-product lookup, taskId={}", task.getId());
+            }
+        }
+        GroupBuy matched = groupBuyMapper.selectMatchedByQrTaskId(task.getId());
+        return matched != null ? matched.getProductDesc() : null;
+    }
+
+    private GroupBuy createQrGroupBuyFromTask(WechatQrTask task, String openid) {
+        if (task.getQrRawText() == null || task.getQrRawText().trim().isEmpty()) {
+            throw new IllegalArgumentException("QR task has no parsed product text");
+        }
+
+        TextParserService.ParseResult parsed = parseQrRawText(task.getQrRawText());
+        GroupBuy gb = new GroupBuy();
+        gb.setInputType("QR_CODE");
+        gb.setRawText(task.getQrUrl());
+        gb.setPlatform(parsed.getPlatform());
+        gb.setProductName(parsed.getProductName());
+        gb.setProductDesc(parsed.getProductDesc());
+        gb.setGroupPrice(parsed.getGroupPrice());
+        gb.setRemainingSlots(parsed.getRemainingSlots());
+        gb.setShareCode(parsed.getShareCode());
+        gb.setImageUrl(null);
+        gb.setShareUrl(task.getQrUrl());
+        gb.setInitiatorId(openid != null && !openid.isEmpty()
+                ? openid
+                : task.getInitiatorId());
+
+        LocalDateTime now = LocalDateTime.now();
+        gb.setCreatedAt(now);
+        gb.setExpireTime(now.plusHours(24));
+        groupBuyMapper.insert(gb);
+        return gb;
+    }
+
+    private TextParserService.ParseResult parseQrRawText(String rawText) {
+        TextParserService.ParseResult parsed = new TextParserService.ParseResult();
+        String normalized = rawText.trim();
+        String[] lines = normalized.split("\\r?\\n");
+
+        String productDesc = firstNonBlank(lines);
+        parsed.setPlatform("拼多多");
+        parsed.setProductName(productDesc);
+        parsed.setProductDesc(productDesc);
+        parsed.setGroupPrice(extractQrPrice(normalized));
+        parsed.setRemainingSlots(extractQrRemainingSlots(normalized));
+        parsed.setShareUrl(null);
+        parsed.setShareCode(null);
+
+        if (parsed.getProductName() == null || parsed.getProductName().isEmpty()) {
+            throw new IllegalArgumentException("无法从二维码解析结果中读取商品名称");
+        }
+        if (parsed.getRemainingSlots() == null) {
+            parsed.setRemainingSlots(1);
+        }
+        return parsed;
+    }
+
+    private String firstNonBlank(String[] lines) {
+        for (String line : lines) {
+            if (line != null && !line.trim().isEmpty()) {
+                return line.trim();
+            }
+        }
+        return null;
+    }
+
+    private java.math.BigDecimal extractQrPrice(String text) {
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(\\d+(?:\\.\\d+)?)").matcher(text);
+        while (matcher.find()) {
+            String value = matcher.group(1);
+            int end = matcher.end();
+            String suffix = text.substring(end, Math.min(text.length(), end + 4));
+            if (suffix.contains("元") || suffix.contains("\\n") || suffix.contains("\r")) {
+                return new java.math.BigDecimal(value);
+            }
+        }
+        return null;
+    }
+
+    private Integer extractQrRemainingSlots(String text) {
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("还差\\s*(\\d+)\\s*人").matcher(text);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+        matcher = java.util.regex.Pattern.compile("仅剩\\s*(\\d+)\\s*个?名额").matcher(text);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+        return null;
     }
 
     @Override

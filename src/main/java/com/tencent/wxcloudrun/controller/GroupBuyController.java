@@ -2,12 +2,13 @@ package com.tencent.wxcloudrun.controller;
 
 import com.tencent.wxcloudrun.config.ApiResponse;
 import com.tencent.wxcloudrun.config.WxUserContext;
+import com.tencent.wxcloudrun.dto.GroupBuyCreateConfirmReq;
 import com.tencent.wxcloudrun.dto.GroupBuyCreateReq;
+import com.tencent.wxcloudrun.dto.GroupBuyCreateResultResp;
 import com.tencent.wxcloudrun.dto.GroupBuyResp;
 import com.tencent.wxcloudrun.dto.GroupBuySearchReq;
 import com.tencent.wxcloudrun.dto.SearchHomeResp;
 import com.tencent.wxcloudrun.model.UserKeyword;
-import com.tencent.wxcloudrun.model.WechatQrTask;
 import com.tencent.wxcloudrun.service.GroupBuyService;
 import com.tencent.wxcloudrun.service.KeywordService;
 
@@ -43,6 +44,20 @@ public class GroupBuyController {
             // throw new IllegalArgumentException("无法获取微信用户信息");
         }
         return openid;
+    }
+
+    @PostMapping("/create-result/{id}/confirm")
+    public ApiResponse confirmCreateResult(@PathVariable Long id,
+                                           @RequestBody GroupBuyCreateConfirmReq req) {
+        try {
+            if (req == null || req.getAction() == null) {
+                return ApiResponse.error("action is required");
+            }
+            GroupBuyCreateResultResp resp = groupBuyService.confirmCreateResult(id, req.getAction(), currentUser());
+            return ApiResponse.ok(resp);
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.error(e.getMessage());
+        }
     }
 
     /**
@@ -100,18 +115,8 @@ public class GroupBuyController {
     @GetMapping("/create-result/{id}")
     public ApiResponse getCreateResult(@PathVariable Long id) {
         try {
-            WechatQrTask task = groupBuyService.getQrTask(id);
-            if (task == null) {
-                return ApiResponse.error("create task does not exist");
-            }
-            Map<String, Object> data = new HashMap<>();
-            data.put("id", task.getId());
-            boolean failed = "FAILED".equals(task.getQrStatus());
-            data.put("failed", failed);
-            if (failed) {
-                data.put("link", task.getQrUrl());
-            }
-            return ApiResponse.ok(data);
+            GroupBuyCreateResultResp resp = groupBuyService.getCreateResult(id);
+            return ApiResponse.ok(resp);
         } catch (IllegalArgumentException e) {
             return ApiResponse.error(e.getMessage());
         }

@@ -19,6 +19,19 @@
         <result property="createdAt" column="created_at" javaType="java.time.LocalDateTime"/>
     </resultMap>
 
+    <resultMap id="wechatQrTaskMapper" type="com.tencent.wxcloudrun.model.WechatQrTask">
+        <id property="id" column="id"/>
+        <result property="groupBuyId" column="group_buy_id"/>
+        <result property="qrUrl" column="qr_url"/>
+        <result property="initiatorId" column="initiator_id"/>
+        <result property="qrStatus" column="qr_status"/>
+        <result property="qrAttempts" column="qr_attempts"/>
+        <result property="qrError" column="qr_error"/>
+        <result property="qrRawText" column="qr_raw_text"/>
+        <result property="sameProduct" column="same_product"/>
+        <result property="matchedGroupBuyId" column="matched_group_buy_id"/>
+    </resultMap>
+
     <insert id="insert" parameterType="com.tencent.wxcloudrun.model.GroupBuy" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO group_buy (`input_type`, `raw_text`, `platform`, `product_name`, `product_desc`, `group_price`,
                                `remaining_slots`, `share_code`, `image_url`, `share_url`,
@@ -33,16 +46,40 @@
         VALUES (#{qrUrl}, #{initiatorId}, 'PENDING', 0)
     </insert>
 
-    <select id="selectWechatQrTaskById" resultType="com.tencent.wxcloudrun.model.WechatQrTask">
+    <select id="selectWechatQrTaskById" resultMap="wechatQrTaskMapper">
         SELECT * FROM wechat_qr_task WHERE id = #{id}
     </select>
 
-    <select id="selectWechatQrTaskByUrl" resultType="com.tencent.wxcloudrun.model.WechatQrTask">
+    <select id="selectWechatQrTaskByUrl" resultMap="wechatQrTaskMapper">
         SELECT * FROM wechat_qr_task WHERE qr_url = #{qrUrl} ORDER BY id DESC LIMIT 1
     </select>
 
+    <update id="bindWechatQrTaskGroupBuy">
+        UPDATE wechat_qr_task
+        SET group_buy_id = #{groupBuyId},
+            same_product = 0,
+            matched_group_buy_id = NULL,
+            qr_status = 'SUCCESS',
+            updated_at = NOW()
+        WHERE id = #{taskId}
+    </update>
+
     <select id="selectById" resultMap="groupBuyMapper">
         SELECT * FROM group_buy WHERE id = #{id}
+    </select>
+
+    <select id="selectByQrTaskId" resultMap="groupBuyMapper">
+        SELECT gb.* FROM group_buy gb
+        INNER JOIN wechat_qr_task task ON task.group_buy_id = gb.id
+        WHERE task.id = #{taskId}
+        LIMIT 1
+    </select>
+
+    <select id="selectMatchedByQrTaskId" resultMap="groupBuyMapper">
+        SELECT gb.* FROM group_buy gb
+        INNER JOIN wechat_qr_task task ON task.matched_group_buy_id = gb.id
+        WHERE task.id = #{taskId}
+        LIMIT 1
     </select>
 
     <select id="selectByInitiator" resultMap="groupBuyMapper">
