@@ -1,6 +1,7 @@
 package com.tencent.wxcloudrun.dao;
 
 import com.tencent.wxcloudrun.model.GroupBuy;
+import com.tencent.wxcloudrun.model.WechatQrTask;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -11,7 +12,20 @@ public interface GroupBuyMapper {
 
     int insert(GroupBuy groupBuy);
 
+    int insertWechatQrTask(WechatQrTask task);
+
+    WechatQrTask selectWechatQrTaskById(@Param("id") Long id);
+
+    WechatQrTask selectWechatQrTaskByUrl(@Param("qrUrl") String qrUrl);
+
+    int bindWechatQrTaskGroupBuy(@Param("taskId") Long taskId,
+                                 @Param("groupBuyId") Long groupBuyId);
+
     GroupBuy selectById(@Param("id") Long id);
+
+    GroupBuy selectByQrTaskId(@Param("taskId") Long taskId);
+
+    GroupBuy selectMatchedByQrTaskId(@Param("taskId") Long taskId);
 
     List<GroupBuy> selectByInitiator(@Param("initiatorId") String initiatorId,
                                       @Param("status") Integer status,

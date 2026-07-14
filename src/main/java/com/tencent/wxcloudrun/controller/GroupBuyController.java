@@ -2,7 +2,9 @@ package com.tencent.wxcloudrun.controller;
 
 import com.tencent.wxcloudrun.config.ApiResponse;
 import com.tencent.wxcloudrun.config.WxUserContext;
+import com.tencent.wxcloudrun.dto.GroupBuyCreateConfirmReq;
 import com.tencent.wxcloudrun.dto.GroupBuyCreateReq;
+import com.tencent.wxcloudrun.dto.GroupBuyCreateResultResp;
 import com.tencent.wxcloudrun.dto.GroupBuyResp;
 import com.tencent.wxcloudrun.dto.GroupBuySearchReq;
 import com.tencent.wxcloudrun.dto.SearchHomeResp;
@@ -44,6 +46,20 @@ public class GroupBuyController {
         return openid;
     }
 
+    @PostMapping("/create-result/{id}/confirm")
+    public ApiResponse confirmCreateResult(@PathVariable Long id,
+                                           @RequestBody GroupBuyCreateConfirmReq req) {
+        try {
+            if (req == null || req.getAction() == null) {
+                return ApiResponse.error("action is required");
+            }
+            GroupBuyCreateResultResp resp = groupBuyService.confirmCreateResult(id, req.getAction(), currentUser());
+            return ApiResponse.ok(resp);
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
     /**
      * 拼团搜索首页 - 推荐品牌、类目 + 最新拼团列表
      */
@@ -60,18 +76,48 @@ public class GroupBuyController {
     @PostMapping("/create")
     public ApiResponse create(@RequestBody GroupBuyCreateReq req) {
         try {
-            log.info("POST /api/group-buy/create 请求: rawText长度={}, force={}",
-                    req.getRawText() != null ? req.getRawText().length() : 0, req.getForce());
             if (req.getRawText() == null || req.getRawText().trim().isEmpty()) {
-                log.warn("POST /api/group-buy/create 参数异常: rawText为空");
-                return ApiResponse.error("拼团文本不能为空");
+                return ApiResponse.error("rawText is required");
             }
+            if (req.getType() == null) {
+                return ApiResponse.error("type is required");
+            }
+            boolean isHttpUrl = req.getRawText().trim().matches("(?i)^https?://\\S+$");
+            if (req.getType() == GroupBuyCreateReq.Type.LINK && !isHttpUrl) {
+                return ApiResponse.error("LINK type requires an http URL");
+            }
+            if (req.getType() == GroupBuyCreateReq.Type.TOKEN && isHttpUrl) {
+                return ApiResponse.error("TOKEN type cannot use an http URL");
+            }
+            if (req.getType() == GroupBuyCreateReq.Type.LINK) {
+                GroupBuyResp resp = groupBuyService.create(req.getRawText(), req.getForce(), currentUser());
+                if (!Boolean.TRUE.equals(resp.getIsNew())) {
+                    return ApiResponse.error("duplicate group buy", resp);
+                }
+                Map<String, Object> data = new HashMap<>();
+                data.put("id", resp.getId());
+                return ApiResponse.ok(data);
+            }
+            log.info("POST /api/group-buy/create 请求: type={}, rawText长度={}, force={}",
+                    req.getType(),
+                    req.getRawText() != null ? req.getRawText().length() : 0, req.getForce());
             GroupBuyResp resp = groupBuyService.create(req.getRawText(), req.getForce(), currentUser());
             log.info("POST /api/group-buy/create 响应: id={}, isNew={}, productName={}",
                     resp.getId(), resp.getIsNew(), resp.getProductName());
-            return ApiResponse.ok(resp);
+            return Boolean.TRUE.equals(resp.getIsNew())
+                    ? ApiResponse.ok(resp) : ApiResponse.error("duplicate group buy", resp);
         } catch (IllegalArgumentException e) {
             log.error("POST /api/group-buy/create 异常: {}", e.getMessage());
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/create-result/{id}")
+    public ApiResponse getCreateResult(@PathVariable Long id) {
+        try {
+            GroupBuyCreateResultResp resp = groupBuyService.getCreateResult(id);
+            return ApiResponse.ok(resp);
+        } catch (IllegalArgumentException e) {
             return ApiResponse.error(e.getMessage());
         }
     }

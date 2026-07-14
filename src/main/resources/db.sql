@@ -13,6 +13,7 @@ CREATE TABLE `Counters` (
 --   expire_time <= NOW() → 已过期
 CREATE TABLE `group_buy` (
   `id`              BIGINT       NOT NULL AUTO_INCREMENT  COMMENT 'ID',
+  `input_type`      VARCHAR(16)  NOT NULL DEFAULT 'TOKEN' COMMENT 'TOKEN or QR_CODE',
   `raw_text`        TEXT         NOT NULL                 COMMENT '用户粘贴的原始文本',
   `platform`        VARCHAR(32)  NOT NULL DEFAULT '拼多多' COMMENT '来源平台',
   `product_name`    VARCHAR(512) NOT NULL                 COMMENT '商品名称',
@@ -32,6 +33,24 @@ CREATE TABLE `group_buy` (
 
 
 -- 用户关注关键词表
+CREATE TABLE `wechat_qr_task` (
+  `id`                 BIGINT        NOT NULL AUTO_INCREMENT,
+  `group_buy_id`       BIGINT        NULL COMMENT 'pdd_helper creates group_buy and writes this on success',
+  `qr_url`             VARCHAR(2048) NOT NULL,
+  `initiator_id`       VARCHAR(64)   NULL COMMENT '提交任务的用户 openid',
+  `qr_status`          VARCHAR(16)   NOT NULL DEFAULT 'PENDING',
+  `qr_attempts`        INT           NOT NULL DEFAULT 0,
+  `qr_error`           VARCHAR(1000),
+  `qr_processed_at`    DATETIME,
+  `qr_next_attempt_at` DATETIME,
+  `qr_raw_text`        TEXT,
+  `created_at`         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_qr_claim` (`qr_status`, `qr_next_attempt_at`, `id`),
+  KEY `idx_qr_group_buy` (`group_buy_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='pdd_helper QR task';
+
 CREATE TABLE `user_keyword` (
   `id`         BIGINT       NOT NULL AUTO_INCREMENT  COMMENT 'ID',
   `openid`     VARCHAR(64)  NOT NULL                 COMMENT '用户 openid',
