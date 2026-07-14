@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class GroupBuy implements Serializable {
 
     private Long id;
+    private String inputType;
 
     /** 用户粘贴的原始文本 */
     private String rawText;

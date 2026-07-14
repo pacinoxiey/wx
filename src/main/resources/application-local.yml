@@ -11,3 +11,26 @@ spring:
     url: jdbc:mysql://localhost:3306/springboot_demo?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
     password: root123
+
+server:
+  port: 80
+
+
+mybatis:
+  mapper-locations: classpath*:mapper/*Mapper.xml
+
+# ======== 拼团搜索首页配置 ========
+groupbuy:
+  home:
+    brands:
+      - 鲜明
+      - 蓝氏
+      - 网易严选
+      - 领先
+    categories:
+      - 猫砂
+      - 猫粮
+      - 狗粮
+      - 零食
+      - 玩具
+      - 日用品

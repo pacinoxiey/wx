@@ -7,6 +7,7 @@ import com.tencent.wxcloudrun.dto.GroupBuyResp;
 import com.tencent.wxcloudrun.dto.GroupBuySearchReq;
 import com.tencent.wxcloudrun.dto.SearchHomeResp;
 import com.tencent.wxcloudrun.model.UserKeyword;
+import com.tencent.wxcloudrun.model.WechatQrTask;
 import com.tencent.wxcloudrun.service.GroupBuyService;
 import com.tencent.wxcloudrun.service.KeywordService;
 
@@ -60,18 +61,58 @@ public class GroupBuyController {
     @PostMapping("/create")
     public ApiResponse create(@RequestBody GroupBuyCreateReq req) {
         try {
-            log.info("POST /api/group-buy/create 请求: rawText长度={}, force={}",
-                    req.getRawText() != null ? req.getRawText().length() : 0, req.getForce());
             if (req.getRawText() == null || req.getRawText().trim().isEmpty()) {
-                log.warn("POST /api/group-buy/create 参数异常: rawText为空");
-                return ApiResponse.error("拼团文本不能为空");
+                return ApiResponse.error("rawText is required");
             }
+            if (req.getType() == null) {
+                return ApiResponse.error("type is required");
+            }
+            boolean isHttpUrl = req.getRawText().trim().matches("(?i)^https?://\\S+$");
+            if (req.getType() == GroupBuyCreateReq.Type.LINK && !isHttpUrl) {
+                return ApiResponse.error("LINK type requires an http URL");
+            }
+            if (req.getType() == GroupBuyCreateReq.Type.TOKEN && isHttpUrl) {
+                return ApiResponse.error("TOKEN type cannot use an http URL");
+            }
+            if (req.getType() == GroupBuyCreateReq.Type.LINK) {
+                GroupBuyResp resp = groupBuyService.create(req.getRawText(), req.getForce(), currentUser());
+                if (!Boolean.TRUE.equals(resp.getIsNew())) {
+                    return ApiResponse.error("duplicate group buy", resp);
+                }
+                Map<String, Object> data = new HashMap<>();
+                data.put("id", resp.getId());
+                return ApiResponse.ok(data);
+            }
+            log.info("POST /api/group-buy/create 请求: type={}, rawText长度={}, force={}",
+                    req.getType(),
+                    req.getRawText() != null ? req.getRawText().length() : 0, req.getForce());
             GroupBuyResp resp = groupBuyService.create(req.getRawText(), req.getForce(), currentUser());
             log.info("POST /api/group-buy/create 响应: id={}, isNew={}, productName={}",
                     resp.getId(), resp.getIsNew(), resp.getProductName());
-            return ApiResponse.ok(resp);
+            return Boolean.TRUE.equals(resp.getIsNew())
+                    ? ApiResponse.ok(resp) : ApiResponse.error("duplicate group buy", resp);
         } catch (IllegalArgumentException e) {
             log.error("POST /api/group-buy/create 异常: {}", e.getMessage());
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
+    @GetMapping("/create-result/{id}")
+    public ApiResponse getCreateResult(@PathVariable Long id) {
+        try {
+            WechatQrTask task = groupBuyService.getQrTask(id);
+            if (task == null) {
+                return ApiResponse.error("create task does not exist");
+            }
+            Map<String, Object> data = new HashMap<>();
+            data.put("id", task.getId());
+            boolean failed = "FAILED".equals(task.getQrStatus());
+            data.put("failed", failed);
+            if (failed) {
+                data.put("link", task.getQrUrl());
+            }
+            return ApiResponse.ok(data);
+        } catch (IllegalArgumentException e) {
             return ApiResponse.error(e.getMessage());
         }
     }

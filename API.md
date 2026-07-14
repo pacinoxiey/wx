@@ -111,6 +111,8 @@ GET /api/group-buy/search?keyword=猫砂&tags=鲜明%26蓝氏&page=1&pageSize=10
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | long | 拼团ID |
+| link | string | 用于重新打开的原始输入；二维码为 URL，口令为原始口令文本 |
+| inputType | string | 输入类型：`QR_CODE` 或 `TOKEN` |
 | platform | string | 来源平台（拼多多/京东/淘宝等） |
 | productName | string | 商品名称（【...】部分） |
 | productDesc | string | 商品描述（【...】及其后面的描述文字） |
@@ -138,27 +140,88 @@ Content-Type: application/json
 
 ```json
 {
-  "rawText": "D:/⇥WYIZCIUyt4HIP⇤ 复制并打开拼多多APP，28.8元拼团购买【喵梵思】猫砂...，仅剩2个名额",
+  "type": "LINK",
+  "rawText": "https://mobile.yangkeduo.com/...",
   "force": false
 }
 ```
 
 | 字段 | 必填 | 默认值 | 说明 |
 |------|------|--------|------|
-| rawText | 是 | - | 用户粘贴的拼团原始文本，后端自动解析 |
-| force | 否 | false | 已存在相同拼团时是否强制新建 |
+| type | 是 | - | `LINK`=二维码链接，`TOKEN`=拼多多口令文本 |
+| rawText | 是 | - | 与 `type` 对应的二维码 URL 或口令文本 |
+| force | 否 | false | TOKEN 商品描述重复时是否强制新建；相同链接或口令始终视为重复 |
 
-**返回逻辑：**
+`LINK` 必须是 HTTP/HTTPS URL；`TOKEN` 不能是 URL。
 
-- `force` 不传或 `false` → 若已有相同 share_code/share_url 的进行中拼团，返回已有记录（`isNew: false`）
-- `force: true` → 跳过查重，强制新建（`isNew: true`）
-- 无重复 → 新建（`isNew: true`）
+### 3.1 二维码链接创建
 
-**响应 data：** 同搜索结果单条记录格式，多了 `isNew` 字段。
+二维码链接只创建异步解析任务，不会创建占位 `group_buy` 数据。创建成功仅返回任务 ID；`pdd_helper` 解析成功后负责创建实际拼团数据：
+
+```json
+{
+  "code": 0,
+  "errorMsg": "",
+  "data": { "id": 123 }
+}
+```
+
+### 3.2 口令创建
+
+`type: "TOKEN"` 时同步解析口令。成功时 `data` 为单条拼团记录，格式同搜索结果；其中 `isNew` 为 `true`。
+
+### 3.3 重复创建
+
+同一二维码 URL 或口令码已存在时，创建接口返回失败；`data` 为已有拼团记录，包含可继续使用的 `id` 与 `link`。`link` 可能为口令文本或二维码 URL。
+
+```json
+{
+  "code": -1,
+  "errorMsg": "duplicate group buy",
+  "data": {
+    "id": 123,
+    "link": "https://mobile.yangkeduo.com/..."
+  }
+}
+```
 
 ---
 
-## 4. 拼团详情
+## 4. 创建结果轮询
+
+```
+GET /api/group-buy/create-result/{id}
+```
+
+仅用于轮询二维码链接创建任务是否失败，不返回商品详情。
+
+处理中或成功：
+
+```json
+{
+  "code": 0,
+  "errorMsg": "",
+  "data": { "id": 123, "failed": false }
+}
+```
+
+最终失败时，`link` 为提交失败的二维码链接：
+
+```json
+{
+  "code": 0,
+  "errorMsg": "",
+  "data": {
+    "id": 123,
+    "failed": true,
+    "link": "https://mobile.yangkeduo.com/..."
+  }
+}
+```
+
+---
+
+## 5. 拼团详情
 
 ```
 GET /api/group-buy/{id}
@@ -174,7 +237,7 @@ GET /api/group-buy/1
 
 ---
 
-## 5. 我发起的拼团
+## 6. 我发起的拼团
 
 ```
 GET /api/group-buy/my-initiated
@@ -206,7 +269,7 @@ GET /api/group-buy/my-initiated?status=2&keyword=jd&page=1&pageSize=10
 
 ---
 
-## 6. 好物提醒
+## 7. 好物提醒
 
 ```
 GET /api/group-buy/reminder
@@ -234,7 +297,7 @@ GET /api/group-buy/reminder?page=1&pageSize=10
 
 ---
 
-## 7. 我的关注 - 关键词管理
+## 8. 我的关注 - 关键词管理
 
 ### 7.1 添加关键词
 

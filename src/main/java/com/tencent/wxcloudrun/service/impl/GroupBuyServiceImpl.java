@@ -6,11 +6,13 @@ import com.tencent.wxcloudrun.dto.GroupBuyResp;
 import com.tencent.wxcloudrun.dto.GroupBuySearchReq;
 import com.tencent.wxcloudrun.dto.SearchHomeResp;
 import com.tencent.wxcloudrun.model.GroupBuy;
+import com.tencent.wxcloudrun.model.WechatQrTask;
 import com.tencent.wxcloudrun.service.GroupBuyService;
 import com.tencent.wxcloudrun.service.TextParserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -31,12 +33,17 @@ public class GroupBuyServiceImpl implements GroupBuyService {
     private final TextParserService textParserService = new TextParserService();
 
     @Override
+    @Transactional
     public GroupBuyResp create(String rawText, Boolean force, String openid) {
         if (rawText == null || rawText.trim().isEmpty()) {
             throw new IllegalArgumentException("拼团文本不能为空");
         }
 
         // 解析文本
+        if (isHttpUrl(rawText)) {
+            return createFromLink(rawText.trim(), openid);
+        }
+
         TextParserService.ParseResult parsed = textParserService.parse(rawText);
 //        parsed.getProductDesc()
         // 链接校验: share_url 或 share_code 必须至少有一个有效
@@ -54,15 +61,11 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         GroupBuy existing = groupBuyMapper.selectActiveByShareCodeOrUrl(
                 parsed.getShareCode(), parsed.getShareUrl());
         if (existing != null) {
-            log.info("已存在相同的拼团, id={}, shareCode={}, shareUrl={}, 返回已有记录",
-                    existing.getId(), parsed.getShareCode(), parsed.getShareUrl());
-            throw new IllegalArgumentException("已存在相同的拼团");
-//            GroupBuyResp resp = toResp(existing);
-//            resp.setIsNew(false);
-//            return resp;
+            GroupBuyResp resp = toResp(existing);
+            resp.setIsNew(false);
+            return resp;
         }
 
-        // 查询相同商品
         GroupBuy groupBuy = groupBuyMapper.selectActiveByProductDesc(parsed.getProductDesc());
         if (groupBuy != null && !Boolean.TRUE.equals(force)) {
             log.info("已存在相同的商品, all={}, 返回已有记录", rawText);
@@ -74,6 +77,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
 
         // 构建实体
         GroupBuy gb = new GroupBuy();
+        gb.setInputType("TOKEN");
         gb.setRawText(rawText);
         gb.setPlatform(parsed.getPlatform());
         gb.setProductName(parsed.getProductName());
@@ -81,7 +85,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         gb.setGroupPrice(parsed.getGroupPrice());
         gb.setRemainingSlots(parsed.getRemainingSlots());
         gb.setShareCode(shareCode);
-        gb.setShareUrl(rawText);
+        gb.setShareUrl(shareUrl);
         gb.setInitiatorId(openid);
 
         LocalDateTime now = LocalDateTime.now();
@@ -95,6 +99,40 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         return resp;
     }
 
+    private GroupBuyResp createFromLink(String link, String openid) {
+        if (!isValidPlatformUrl(link)) {
+            throw new IllegalArgumentException("unsupported group-buy link");
+        }
+        GroupBuy existingGroupBuy = groupBuyMapper.selectActiveByShareCodeOrUrl(null, link);
+        if (existingGroupBuy != null) {
+            GroupBuyResp resp = toResp(existingGroupBuy);
+            resp.setIsNew(false);
+            return resp;
+        }
+        WechatQrTask existingTask = groupBuyMapper.selectWechatQrTaskByUrl(link);
+        if (existingTask != null) {
+            GroupBuyResp resp = new GroupBuyResp();
+            resp.setId(existingTask.getId());
+            resp.setLink(existingTask.getQrUrl());
+            resp.setIsNew(false);
+            return resp;
+        }
+
+        WechatQrTask task = new WechatQrTask();
+        task.setQrUrl(link);
+        task.setInitiatorId(openid);
+        groupBuyMapper.insertWechatQrTask(task);
+        GroupBuyResp resp = new GroupBuyResp();
+        resp.setId(task.getId());
+        resp.setLink(link);
+        resp.setIsNew(true);
+        return resp;
+    }
+
+    private boolean isHttpUrl(String value) {
+        return value != null && value.trim().matches("(?i)^https?://\\S+$");
+    }
+
     @Override
     public GroupBuyResp getDetail(Long id) {
         GroupBuy gb = groupBuyMapper.selectById(id);
@@ -102,6 +140,11 @@ public class GroupBuyServiceImpl implements GroupBuyService {
             throw new IllegalArgumentException("拼团信息不存在");
         }
         return toResp(gb);
+    }
+
+    @Override
+    public WechatQrTask getQrTask(Long taskId) {
+        return groupBuyMapper.selectWechatQrTaskById(taskId);
     }
 
     @Override
@@ -186,17 +229,16 @@ public class GroupBuyServiceImpl implements GroupBuyService {
     private GroupBuyResp toResp(GroupBuy gb) {
         GroupBuyResp resp = new GroupBuyResp();
         resp.setId(gb.getId());
+        resp.setInputType(gb.getInputType());
+        resp.setLink(gb.getShareUrl() != null && !gb.getShareUrl().isEmpty()
+                ? gb.getShareUrl() : gb.getRawText());
         resp.setPlatform(gb.getPlatform());
         resp.setProductName(gb.getProductName());
-        resp.setProductDesc(gb.getProductDesc());
         resp.setGroupPrice(gb.getGroupPrice());
         resp.setRemainingSlots(gb.getRemainingSlots());
-        resp.setShareCode(gb.getShareCode());
         resp.setImageUrl(gb.getImageUrl());
         resp.setShareUrl(gb.getShareUrl());
-        resp.setInitiatorId(gb.getInitiatorId());
         resp.setExpireTime(toEpochSecond(gb.getExpireTime()));
-        resp.setCreatedAt(toEpochSecond(gb.getCreatedAt()));
 
         // 动态判定状态和倒计时
         LocalDateTime now = LocalDateTime.now();

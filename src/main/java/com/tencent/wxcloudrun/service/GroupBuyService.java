@@ -18,6 +18,8 @@ public interface GroupBuyService {
      */
     GroupBuyResp getDetail(Long id);
 
+    com.tencent.wxcloudrun.model.WechatQrTask getQrTask(Long taskId);
+
     /**
      * 我发起的拼团列表
      */

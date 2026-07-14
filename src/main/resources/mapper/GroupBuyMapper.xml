@@ -4,6 +4,7 @@
 
     <resultMap id="groupBuyMapper" type="com.tencent.wxcloudrun.model.GroupBuy">
         <id property="id" column="id"/>
+        <result property="inputType" column="input_type"/>
         <result property="rawText" column="raw_text"/>
         <result property="platform" column="platform"/>
         <result property="productName" column="product_name"/>
@@ -19,13 +20,26 @@
     </resultMap>
 
     <insert id="insert" parameterType="com.tencent.wxcloudrun.model.GroupBuy" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO group_buy (`raw_text`, `platform`, `product_name`, `product_desc`, `group_price`,
+        INSERT INTO group_buy (`input_type`, `raw_text`, `platform`, `product_name`, `product_desc`, `group_price`,
                                `remaining_slots`, `share_code`, `image_url`, `share_url`,
                                `initiator_id`, `expire_time`, `created_at`)
-        VALUES (#{rawText}, #{platform}, #{productName}, #{productDesc}, #{groupPrice},
+        VALUES (#{inputType}, #{rawText}, #{platform}, #{productName}, #{productDesc}, #{groupPrice},
                 #{remainingSlots}, #{shareCode}, #{imageUrl}, #{shareUrl},
                 #{initiatorId}, #{expireTime}, #{createdAt})
     </insert>
+
+    <insert id="insertWechatQrTask" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wechat_qr_task (`qr_url`, `initiator_id`, `qr_status`, `qr_attempts`)
+        VALUES (#{qrUrl}, #{initiatorId}, 'PENDING', 0)
+    </insert>
+
+    <select id="selectWechatQrTaskById" resultType="com.tencent.wxcloudrun.model.WechatQrTask">
+        SELECT * FROM wechat_qr_task WHERE id = #{id}
+    </select>
+
+    <select id="selectWechatQrTaskByUrl" resultType="com.tencent.wxcloudrun.model.WechatQrTask">
+        SELECT * FROM wechat_qr_task WHERE qr_url = #{qrUrl} ORDER BY id DESC LIMIT 1
+    </select>
 
     <select id="selectById" resultMap="groupBuyMapper">
         SELECT * FROM group_buy WHERE id = #{id}
@@ -81,8 +95,7 @@
 
     <select id="selectActiveByShareCodeOrUrl" resultMap="groupBuyMapper">
         SELECT * FROM group_buy
-        WHERE expire_time &gt; NOW()
-        AND (
+        WHERE (
             <if test="shareCode != null and shareCode != ''">
                 share_code = #{shareCode}
             </if>

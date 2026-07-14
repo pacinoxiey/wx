@@ -5,6 +5,14 @@ import lombok.Data;
 @Data
 public class GroupBuyCreateReq {
 
+    public enum Type {
+        LINK,
+        TOKEN
+    }
+
+    /** A PDD link or token, selected by type. */
+    private Type type;
+
     /** 用户粘贴的拼团原始文本 */
     private String rawText;
 
