@@ -28,7 +28,7 @@ public class WxCosController {
             HttpEntity<String> entity = new HttpEntity<>(headers);
             ResponseEntity<String> response = restTemplate.exchange(
                     WX_COS_AUTH_URL, HttpMethod.GET, entity, String.class);
-            log.info("GET /api/wx/cos/auth 响应: status={}", response.getStatusCodeValue());
+            log.info("GET /api/wx/cos/auth 响应: status={}", response.getStatusCode().value());
             return ApiResponse.ok(response.getBody());
         } catch (Exception e) {
             log.error("GET /api/wx/cos/auth 异常: {}", e.getMessage());
