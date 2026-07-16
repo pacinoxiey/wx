@@ -16,6 +16,13 @@ spring:
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    lang: zh-cn
+
 knife4j:
   enable: true
   setting:
