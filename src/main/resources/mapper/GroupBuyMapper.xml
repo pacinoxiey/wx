@@ -79,6 +79,7 @@
         SELECT gb.* FROM group_buy gb
         INNER JOIN wechat_qr_task task ON task.matched_group_buy_id = gb.id
         WHERE task.id = #{taskId}
+        AND gb.expire_time &gt; NOW()
         LIMIT 1
     </select>
 
@@ -132,7 +133,8 @@
 
     <select id="selectActiveByShareCodeOrUrl" resultMap="groupBuyMapper">
         SELECT * FROM group_buy
-        WHERE (
+        WHERE expire_time &gt; NOW()
+        AND (
             <if test="shareCode != null and shareCode != ''">
                 share_code = #{shareCode}
             </if>
@@ -143,6 +145,13 @@
                 share_url = #{shareUrl}
             </if>
         )
+        LIMIT 1
+    </select>
+
+    <select id="selectActiveById" resultMap="groupBuyMapper">
+        SELECT * FROM group_buy
+        WHERE id = #{id}
+        AND expire_time &gt; NOW()
         LIMIT 1
     </select>
 

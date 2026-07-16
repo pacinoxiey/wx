@@ -23,6 +23,8 @@ public interface GroupBuyMapper {
 
     GroupBuy selectById(@Param("id") Long id);
 
+    GroupBuy selectActiveById(@Param("id") Long id);
+
     GroupBuy selectByQrTaskId(@Param("taskId") Long taskId);
 
     GroupBuy selectMatchedByQrTaskId(@Param("taskId") Long taskId);

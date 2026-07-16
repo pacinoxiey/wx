@@ -264,7 +264,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
 
         GroupBuy matched = groupBuyMapper.selectMatchedByQrTaskId(task.getId());
         if (matched == null && task.getMatchedGroupBuyId() != null) {
-            matched = groupBuyMapper.selectById(task.getMatchedGroupBuyId());
+            matched = groupBuyMapper.selectActiveById(task.getMatchedGroupBuyId());
         }
         return matched;
     }
