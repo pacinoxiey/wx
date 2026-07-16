@@ -108,7 +108,7 @@
         <if test="keywords != null and keywords.size() > 0">
             AND (
             <foreach collection="keywords" item="kw" separator=" OR ">
-                share_url LIKE CONCAT('%', #{kw}, '%')
+                product_desc LIKE CONCAT('%', #{kw}, '%')
             </foreach>
             )
         </if>
