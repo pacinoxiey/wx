@@ -34,3 +34,14 @@ groupbuy:
       - 零食
       - 玩具
       - 日用品
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn

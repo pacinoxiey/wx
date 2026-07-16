@@ -1,6 +1,8 @@
 package com.tencent.wxcloudrun.controller;
 
 import com.tencent.wxcloudrun.config.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -10,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 @RestController
 @RequestMapping("/api/wx")
+@Tag(name = "微信云接口", description = "微信云托管相关能力接口")
 public class WxCosController {
 
     @Autowired
@@ -21,6 +24,7 @@ public class WxCosController {
      * 获取微信 COS 上传授权
      */
     @GetMapping("/cos/auth")
+    @Operation(summary = "获取 COS 上传授权", description = "调用微信云托管内置接口，获取客户端上传 COS 所需的授权信息。")
     public ApiResponse getCosAuth() {
         try {
             log.info("GET /api/wx/cos/auth 请求微信COS授权");

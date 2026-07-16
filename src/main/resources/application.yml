@@ -16,6 +16,11 @@ spring:
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
 
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
 # ======== 拼团搜索首页配置 ========
 groupbuy:
   home:

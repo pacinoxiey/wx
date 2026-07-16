@@ -47,7 +47,6 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         }
 
         TextParserService.ParseResult parsed = textParserService.parse(rawText);
-//        parsed.getProductDesc()
         // 链接校验: share_url 或 share_code 必须至少有一个有效
         String shareUrl = parsed.getShareUrl();
         String shareCode = parsed.getShareCode();
@@ -59,10 +58,10 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         //     throw new IllegalArgumentException("暂不支持该平台的拼团链接，仅支持拼多多/京东/淘宝/美团/抖音");
         // }
 
-        // 去重: 根据 share_code/share_url 查找是否已有进行中的相同拼团
+        // force=true 时跳过去重，允许相同口令或商品重复创建。
         GroupBuy existing = groupBuyMapper.selectActiveByShareCodeOrUrl(
                 parsed.getShareCode(), parsed.getShareUrl());
-        if (existing != null) {
+        if (existing != null && !Boolean.TRUE.equals(force)) {
             GroupBuyResp resp = toResp(existing);
             resp.setIsNew(false);
             return resp;
