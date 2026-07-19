@@ -20,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -243,5 +245,21 @@ public class GroupBuyController {
         data.put("page", page);
         data.put("pageSize", pageSize);
         return ApiResponse.ok(data);
+    }
+
+    public static void main(String[] args) {
+        //2026-07-19 13:58:54
+        LocalDateTime localDateTime = LocalDateTime.of(2026, 7, 19, 13, 58, 54);
+        LocalDateTime expireTime = localDateTime.plusHours(23).plusMinutes(13).plusSeconds(50);
+        System.err.println(expireTime);
+        LocalDateTime now = LocalDateTime.now();
+        Duration d = Duration.between(now, expireTime);
+        long hours = d.toHours();
+        long minutes = d.toMinutes() % 60;
+        if (hours > 0) {
+            System.err.println("剩余" + hours + "小时" + minutes + "分");
+        } else {
+            System.err.println("剩余" + minutes + "分");
+        }
     }
 }
