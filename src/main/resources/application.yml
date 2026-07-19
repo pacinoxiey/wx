@@ -3,6 +3,8 @@ server:
 
 
 spring:
+  jackson:
+    time-zone: Asia/Shanghai
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://sh-cynosdbmysql-grp-4dxqlses.sql.tencentcdb.com:28243/springboot_demo?serverTimezone=Asia/Shanghai&useSSL=false

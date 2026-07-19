@@ -252,7 +252,7 @@ public class GroupBuyController {
         LocalDateTime localDateTime = LocalDateTime.of(2026, 7, 19, 13, 58, 54);
         LocalDateTime expireTime = localDateTime.plusHours(23).plusMinutes(13).plusSeconds(50);
         System.err.println(expireTime);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Shanghai"));
         Duration d = Duration.between(now, expireTime);
         long hours = d.toHours();
         long minutes = d.toMinutes() % 60;

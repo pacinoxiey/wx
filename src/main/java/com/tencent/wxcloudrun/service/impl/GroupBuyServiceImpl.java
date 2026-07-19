@@ -89,7 +89,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         gb.setShareUrl(shareUrl);
         gb.setInitiatorId(openid);
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
         gb.setCreatedAt(now);
         gb.setExpireTime(now.plusHours(24)); // 24小时有效期
 
@@ -302,7 +302,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
                 ? openid
                 : task.getInitiatorId());
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
         gb.setCreatedAt(now);
         gb.setExpireTime(now.plusHours(24));
         groupBuyMapper.insert(gb);
@@ -460,7 +460,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         resp.setExpireTime(toEpochSecond(gb.getExpireTime()));
 
         // 动态判定状态和倒计时
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
         if (gb.getExpireTime() != null && gb.getExpireTime().isAfter(now)) {
             resp.setStatus(1); // 进行中
             Duration d = Duration.between(now, gb.getExpireTime());
