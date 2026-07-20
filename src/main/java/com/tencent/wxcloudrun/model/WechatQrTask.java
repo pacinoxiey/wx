@@ -3,13 +3,18 @@ package com.tencent.wxcloudrun.model;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
 /**
  * Asynchronous QR-link parsing task. A groupBuyId is assigned by pdd_helper
  * only after the link has been parsed and a group_buy record is created.
  */
 @Data
 @Schema(description = "微信二维码链接解析任务")
-public class WechatQrTask {
+public class WechatQrTask implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /** Unique task ID returned to the client for polling. */
     @Schema(description = "任务 ID", example = "1001")
@@ -39,6 +44,14 @@ public class WechatQrTask {
     @Schema(description = "最近一次处理错误信息")
     private String qrError;
 
+    /** Time of the last processing attempt. */
+    @Schema(description = "二维码任务最近处理时间")
+    private LocalDateTime qrProcessedAt;
+
+    /** Earliest time at which the task may be retried. */
+    @Schema(description = "二维码任务下次尝试时间")
+    private LocalDateTime qrNextAttemptAt;
+
     /** Raw text extracted by pdd_helper from the QR target page. */
     @Schema(description = "二维码目标页解析出的原始文本")
     private String qrRawText;
@@ -50,4 +63,12 @@ public class WechatQrTask {
     /** Existing group_buy ID to join when sameProduct is true. */
     @Schema(description = "命中的同款拼团 ID")
     private Long matchedGroupBuyId;
+
+    /** Task creation time. */
+    @Schema(description = "任务创建时间")
+    private LocalDateTime createdAt;
+
+    /** Task last update time. */
+    @Schema(description = "任务更新时间")
+    private LocalDateTime updatedAt;
 }

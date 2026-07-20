@@ -27,9 +27,13 @@
         <result property="qrStatus" column="qr_status"/>
         <result property="qrAttempts" column="qr_attempts"/>
         <result property="qrError" column="qr_error"/>
+        <result property="qrProcessedAt" column="qr_processed_at" javaType="java.time.LocalDateTime"/>
+        <result property="qrNextAttemptAt" column="qr_next_attempt_at" javaType="java.time.LocalDateTime"/>
         <result property="qrRawText" column="qr_raw_text"/>
         <result property="sameProduct" column="same_product"/>
         <result property="matchedGroupBuyId" column="matched_group_buy_id"/>
+        <result property="createdAt" column="created_at" javaType="java.time.LocalDateTime"/>
+        <result property="updatedAt" column="updated_at" javaType="java.time.LocalDateTime"/>
     </resultMap>
 
     <insert id="insert" parameterType="com.tencent.wxcloudrun.model.GroupBuy" useGeneratedKeys="true" keyProperty="id">
@@ -159,7 +163,7 @@
         SELECT * FROM group_buy
         WHERE expire_time &gt; NOW()
         AND
-            product_desc = #{productDesc}
+            product_desc LIKE CONCAT(#{productDesc}, '%')
         LIMIT 1
     </select>
 

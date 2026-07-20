@@ -149,6 +149,7 @@ public class GroupBuyServiceImpl implements GroupBuyService {
     }
 
     @Override
+    @Transactional
     public GroupBuyCreateResultResp getCreateResult(Long taskId) {
         WechatQrTask task = groupBuyMapper.selectWechatQrTaskById(taskId);
         if (task == null) {
@@ -158,7 +159,6 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         GroupBuyCreateResultResp resp = new GroupBuyCreateResultResp();
         resp.setId(task.getId());
         resp.setLink(task.getQrUrl());
-        resp.setSameProduct(Boolean.TRUE.equals(task.getSameProduct()));
 
         String qrStatus = task.getQrStatus();
         if ("FAILED".equals(qrStatus)) {
@@ -172,9 +172,34 @@ public class GroupBuyServiceImpl implements GroupBuyService {
         }
 
         if ("SUCCESS".equals(qrStatus)) {
-            GroupBuy groupBuy = Boolean.TRUE.equals(task.getSameProduct())
-                    ? findActiveSameProductFromTask(task)
-                    : groupBuyMapper.selectByQrTaskId(taskId);
+            boolean sameProduct = Boolean.TRUE.equals(task.getSameProduct());
+            if (sameProduct) {
+                // 检查命中的同款拼团是否仍然有效
+                GroupBuy matched = findActiveSameProductFromTask(task);
+                if (matched != null) {
+                    // 同款拼团有效，返回确认弹窗
+                    resp.setStatus("SUCCESS");
+                    resp.setGroupBuy(toResp(matched));
+                    resp.setAction("SAME_PRODUCT_DIALOG");
+                    resp.setMessage("检测到有相同的产品，是否直接参与拼团");
+                    resp.setSameProduct(true);
+                    resp.setFailed(false);
+                    return resp;
+                }
+                // 同款拼团已过期，自动创建新拼团
+                GroupBuy created = createQrGroupBuyFromTask(task, null);
+                groupBuyMapper.bindWechatQrTaskGroupBuy(taskId, created.getId());
+                resp.setStatus("SUCCESS");
+                resp.setGroupBuy(toResp(created));
+                resp.setAction("SUCCESS_TOAST");
+                resp.setMessage("小主，已成功发布咯");
+                resp.setSameProduct(false);
+                resp.setFailed(false);
+                return resp;
+            }
+
+            // 非同款场景，查询已创建的拼团
+            GroupBuy groupBuy = groupBuyMapper.selectByQrTaskId(taskId);
             if (groupBuy == null && task.getGroupBuyId() != null) {
                 groupBuy = groupBuyMapper.selectById(task.getGroupBuyId());
             }
@@ -184,12 +209,9 @@ public class GroupBuyServiceImpl implements GroupBuyService {
 
             resp.setStatus("SUCCESS");
             resp.setGroupBuy(groupBuy != null ? toResp(groupBuy) : null);
-            resp.setAction(Boolean.TRUE.equals(task.getSameProduct())
-                    ? "SAME_PRODUCT_DIALOG"
-                    : "SUCCESS_TOAST");
-            resp.setMessage(Boolean.TRUE.equals(task.getSameProduct())
-                    ? "检测到有相同的产品，是否直接参与拼团"
-                    : "小主，已成功发布咯");
+            resp.setAction("SUCCESS_TOAST");
+            resp.setMessage("小主，已成功发布咯");
+            resp.setSameProduct(false);
             resp.setFailed(false);
             return resp;
         }
