@@ -65,11 +65,11 @@ public class TextParserService {
         result.setGroupPrice(extractPrice(rawText));
 
         // 4. 提取商品名
-        result.setProductName(extractProductName(rawText));
+//        result.setProductName(extractProductName(rawText));
 
         // 4.1 提取商品描述（【...】及后面的描述文字）
         result.setProductDesc(extractProductDesc(rawText));
-
+        result.setProductName(result.getProductDesc());
         // 5. 提取剩余名额
         result.setRemainingSlots(extractRemainingSlots(rawText));
 
